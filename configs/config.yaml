@@ -1,0 +1,18 @@
+hydra:
+  run: 
+    # Set the output directory to be the same as script's directory
+    dir: .
+  output_subdir: .hydra
+
+defaults:
+  - dataset: cifar10
+  - model: 'autoencoder_kl_cifar10'
+  - training: default
+  - sampling: default
+  - _self_
+
+# Global settings
+device: 'cuda'
+experiment_name: 'autoencoder_kl_16x16x4_vgg'
+seed: 42
+resume_from_run_id: null
