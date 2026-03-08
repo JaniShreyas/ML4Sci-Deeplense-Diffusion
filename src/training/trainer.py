@@ -66,16 +66,16 @@ class Trainer:
         self.fixed_sample_batch_test = self.fixed_sample_batch_test[:num_images]
 
     def plot_fixed_batch(self):
-        # 1. Get the batch, detach from graph, move to CPU
+        # Get the batch, detach from graph, move to CPU
         images = self.fixed_sample_batch_train.detach().cpu()
 
         images = denormalize(DataConfig(**self.config.dataset), images)
 
-        # 3. Create a grid of images
+        # Create a grid of images
         # nrow controls how many images per row
         grid_img = torchvision.utils.make_grid(images, nrow=4, padding=2)
 
-        # 4. Convert to numpy and transpose dimensions
+        # Convert to numpy and transpose dimensions
         # PyTorch is (C, H, W), Matplotlib needs (H, W, C)
         plt.figure(figsize=(10, 10))
         plt.imshow(grid_img.permute(1, 2, 0).numpy())
@@ -127,11 +127,6 @@ class Trainer:
                 else:
                     losses_sum[loss_type] = value.item()
 
-            # del losses, loss, clean_images
-            
-            # if batch_idx % 50 == 0 and torch.cuda.is_available():
-            #     torch.cuda.empty_cache()
-
 
         avg_losses = {loss_type: (total_value / len(self.train_dataloader)) for loss_type, total_value in losses_sum.items()}
         print(f"Epoch {epoch_num} - Average loss: {avg_losses["loss"]:.4f}")
@@ -139,9 +134,6 @@ class Trainer:
         # Log metrics for MLFlow
         for loss_type in avg_losses:
             mlflow.log_metric(f"avg_{loss_type}", avg_losses[loss_type], step=epoch_num)
-
-        # if torch.cuda.is_available():
-        #     torch.cuda.empty_cache()
 
     def _save_and_log_checkpoint(self, epoch_num, is_final=False):
         base_checkpoint_artifact_dir = "checkpoints"
@@ -193,8 +185,6 @@ class Trainer:
                     else:
                         losses_sum[loss_type] = value.item()
 
-                # del losses, clean_images
-
             avg_losses = {loss_type: (total_value / len(self.test_dataloader)) for loss_type, total_value in losses_sum.items()}
             print(f"Average validation loss: {avg_losses["loss"]}")
 
@@ -205,7 +195,7 @@ class Trainer:
     def sample_and_log_images(self, epoch_num):
         self.model.eval()
         with torch.no_grad():
-            # 1. Generate Train Samples
+            # Generate Train Samples
             generated_train = self.ema_model.sample(
                 num_images=self.config["sampling"]["num_images"],
                 image_size=self.config["dataset"]["image_size"],
@@ -214,7 +204,7 @@ class Trainer:
                 sample_x=self.fixed_sample_batch_train,
             )
 
-            # 2. Generate Test Samples
+            # Generate Test Samples
             generated_test = self.ema_model.sample(
                 num_images=self.config["sampling"]["num_images"],
                 image_size=self.config["dataset"]["image_size"],
@@ -226,7 +216,6 @@ class Trainer:
             # --- Formatting Logic ---
 
             # Calculate how many images per row to make a square grid (e.g., if 16 images, nrow=4)
-            # You can hardcode nrow=4 if you prefer.
             nrow = int(math.sqrt(self.config["sampling"]["num_images"]))
 
             # Create the two separate 4x4 grids (C, H, W)
@@ -235,16 +224,15 @@ class Trainer:
             grid_test = make_grid(generated_test, nrow=nrow, padding=2)
 
             # Create a vertical separator (White line)
-            # It must match the height (dim 1) and channels (dim 0) of the grids
             channels, height, _ = grid_train.shape
-            separator_width = 10 # Width of the separator in pixels
+            separator_width = 10
             separator = torch.ones(channels, height, separator_width).to(self.device)
 
             # Combine: Train | Separator | Test
             # We concatenate along dimension 2 (the width dimension)
             final_image = torch.cat([grid_train, separator, grid_test], dim=2)
 
-            # 3. Save and Log
+            # Save and Log
             temp_path = f"temp_sample_epoch_{epoch_num}.png"
             
             # Save the final pre-constructed grid
@@ -254,8 +242,6 @@ class Trainer:
 
             os.remove(temp_path)
             print(f"Logged side-by-side sample images for epoch {epoch_num} to MLFlow")
-
-            # del generated_train, generated_test, grid_train, grid_test, final_image
 
     def train(self): 
         print(f"Starting training from epoch {self.start_epoch}...")
