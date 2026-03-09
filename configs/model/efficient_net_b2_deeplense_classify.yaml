@@ -1,0 +1,8 @@
+name: efficient_net_b2_classifier
+model_type: "classifier"
+
+backbone:
+  pretrained: True
+  num_classes: 3
+  in_channels: 1
+

@@ -1,0 +1,4 @@
+name: deeplense_classify
+image_size: 150
+batch_size: 64
+data_root: datasets/deeplense_classify/dataset
