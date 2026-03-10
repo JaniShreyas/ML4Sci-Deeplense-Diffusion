@@ -1,4 +1,4 @@
-name: efficient_net_b2_classifier
+name: efficient_net_b2
 type: "classifier"
 
 backbone:
