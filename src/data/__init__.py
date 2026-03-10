@@ -2,6 +2,7 @@ from torch import Tensor
 
 from .mnist import get_dataloaders as get_mnist_dataloaders, get_stats as get_mnist_stats, get_datasets as get_mnist_datasets, denormalize as denormalize_mnist
 from .cifar10 import get_dataloaders as get_cifar10_dataloaders, get_stats as get_cifar10_stats, get_datasets as get_cifar10_datasets, denormalize as denormalize_cifar10
+from .deeplense_classify import get_dataloaders as get_deeplense_classify_dataloaders, get_stats as get_deeplense_classify_stats, get_datasets as get_deeplense_classify_datasets, denormalize as denormalize_deeplense_classify
 
 from .config import DataConfig
 from torch.utils.data import DataLoader, Dataset
@@ -10,6 +11,7 @@ from torch.utils.data import DataLoader, Dataset
 DATASET_REGISTRY = {
     "mnist": (get_mnist_dataloaders, get_mnist_stats, get_mnist_datasets, denormalize_mnist),
     "cifar10": (get_cifar10_dataloaders, get_cifar10_stats, get_cifar10_datasets, denormalize_cifar10),
+    "deeplense_classify": (get_deeplense_classify_dataloaders, get_deeplense_classify_stats, get_deeplense_classify_datasets, denormalize_deeplense_classify),
 }
 
 def verify_dataset(cfg_name: str) -> None:
