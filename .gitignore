@@ -10,3 +10,8 @@ wheels/
 .venv
 
 datasets/
+.hydra/
+mlruns/
+
+mlflow.db
+train.log
