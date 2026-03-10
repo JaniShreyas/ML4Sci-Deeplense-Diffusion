@@ -2,6 +2,7 @@ from src.models.backbones.unet import UNet
 from src.models.backbones.unet_attention import UNetWithAttention
 from src.models.ddpm import DiffusionModel
 from src.models.backbones.jit import JiT
+from src.models.efficient_net_b2 import EfficientNetB2
 
 import torch.nn as nn
 
@@ -22,11 +23,16 @@ def create_ddpm_jit(config):
     model = DiffusionModel(backbone=backbone, config=config)
     return model
 
+def create_efficient_net_b2(config):
+    model = EfficientNetB2(**config.model.backbone)
+    return model
+
 # Model Registry
 MODEL_REGISTRY = {
     "ddpm_unet_base": create_ddpm_unet_base,
     "ddpm_unet_attention": create_ddpm_unet_attention,
     "ddpm_jit": create_ddpm_jit,
+    "efficient_net_b2": create_efficient_net_b2,
 }
 
 def get_model(config) -> nn.Module:
