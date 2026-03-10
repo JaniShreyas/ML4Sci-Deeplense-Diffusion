@@ -31,6 +31,12 @@ class Trainer:
         self.epochs = config["training"]["epochs"]
         self.experiment_name = config["experiment_name"]
         self.sample_every_n_epochs = config["sampling"]["sample_every_n_epochs"]
+        self.model_type = config["model"]["type"]
+        print(f"Trainer initialized for mode: {self.model_type.upper()}")
+        if self.model_type == "classifier":
+            # The common task can be solved with Cross Entropy loss.
+            # Later on a factory can be created. But no need to overengineer right now eh
+            self.criterion = torch.nn.CrossEntropyLoss()
 
         # Core Components
         self.model = model.to(self.device)
@@ -43,7 +49,9 @@ class Trainer:
 
         # Setup EMA decay
         self.ema_decay = self.config["training"].get("ema_decay")
-        self.ema_model = deepcopy(self.model).to(self.device).eval().requires_grad_(False)
+        self.ema_model = (
+            deepcopy(self.model).to(self.device).eval().requires_grad_(False)
+        )
         print(f"EMA enabled with decay rate: {self.ema_decay}")
 
         # Reload EMA decay
@@ -51,7 +59,10 @@ class Trainer:
             self.ema_model.load_state_dict(ema_state_dict)
             print("Resumed EMA model state from checkpoint")
 
-        self.fixed_sample_batch_train, self.fixed_sample_batch_test = next(iter(self.train_dataloader)), next(iter(self.test_dataloader))
+        self.fixed_sample_batch_train, self.fixed_sample_batch_test = (
+            next(iter(self.train_dataloader)),
+            next(iter(self.test_dataloader)),
+        )
         # Handle cases where dataloader returns (data, label)
         if isinstance(self.fixed_sample_batch_train, (list, tuple)):
             self.fixed_sample_batch_train = self.fixed_sample_batch_train[0]
@@ -79,14 +90,18 @@ class Trainer:
         # PyTorch is (C, H, W), Matplotlib needs (H, W, C)
         plt.figure(figsize=(10, 10))
         plt.imshow(grid_img.permute(1, 2, 0).numpy())
-        plt.axis('off')
+        plt.axis("off")
         plt.title("Fixed Sample Batch")
         plt.show()
 
     def _update_ema_weights(self):
         with torch.no_grad():
-            for ema_param, model_param in zip(self.ema_model.parameters(), self.model.parameters()):
-                ema_param.data.mul_(self.ema_decay).add_(model_param.data, alpha=(1-self.ema_decay))
+            for ema_param, model_param in zip(
+                self.ema_model.parameters(), self.model.parameters()
+            ):
+                ema_param.data.mul_(self.ema_decay).add_(
+                    model_param.data, alpha=(1 - self.ema_decay)
+                )
 
     def _train_epoch(self, epoch_num):
         self.model.train()
@@ -102,13 +117,27 @@ class Trainer:
                 if isinstance(batch, (list, tuple))
                 else batch.to(self.device)
             )
+            if isinstance(batch, (list, tuple)) and len(batch) > 1:
+                labels = batch[1].to(self.device)
+            else:
+                labels = None
 
             # Optimizer zero grad
             self.optimizer.zero_grad(set_to_none=True)
 
-            # Model directly returns loss (helps in generalizing training loop in this ddpm case)
-            losses = self.model(clean_images)
-            loss = losses["loss"]
+            if self.model_type == "classifier":
+                if labels is None:
+                    raise ValueError("Labels are required for classifier training")
+                
+                logits = self.model(clean_images)
+                loss = self.criterion(logits, labels)
+                preds = torch.argmax(logits, dim=1)
+                acc = (preds == labels).float().mean().item()
+                losses = {"loss": loss, "accuracy": acc}
+            else:
+                # Model directly returns loss (helps in generalizing training loop in this ddpm case)
+                losses = self.model(clean_images)
+                loss = losses["loss"]
 
             # Loss backward
             loss.backward()
@@ -127,9 +156,11 @@ class Trainer:
                 else:
                     losses_sum[loss_type] = value.item()
 
-
-        avg_losses = {loss_type: (total_value / len(self.train_dataloader)) for loss_type, total_value in losses_sum.items()}
-        print(f"Epoch {epoch_num} - Average loss: {avg_losses["loss"]:.4f}")
+        avg_losses = {
+            loss_type: (total_value / len(self.train_dataloader))
+            for loss_type, total_value in losses_sum.items()
+        }
+        print(f"Epoch {epoch_num} - Average loss: {avg_losses['loss']:.4f}")
 
         # Log metrics for MLFlow
         for loss_type in avg_losses:
@@ -148,12 +179,16 @@ class Trainer:
         torch.save(checkpoint, temp_checkpoint_path)
 
         # Log as artifact
-        mlflow.log_artifact(temp_checkpoint_path, artifact_path=base_checkpoint_artifact_dir)
+        mlflow.log_artifact(
+            temp_checkpoint_path, artifact_path=base_checkpoint_artifact_dir
+        )
 
         # final_checkpoint variable for easy access
         latest_checkpoint_path = "latest_checkpoint.pt"
         torch.save(checkpoint, latest_checkpoint_path)
-        mlflow.log_artifact(latest_checkpoint_path, artifact_path=base_checkpoint_artifact_dir)
+        mlflow.log_artifact(
+            latest_checkpoint_path, artifact_path=base_checkpoint_artifact_dir
+        )
 
         # If it is final, save the ema model as mlflow model as well
         if is_final:
@@ -176,8 +211,19 @@ class Trainer:
                     if isinstance(batch, (list, tuple))
                     else batch.to(self.device)
                 )
+                if isinstance(batch, (list, tuple)) and len(batch) > 1:
+                    labels = batch[1].to(self.device)
+                else:
+                    labels = None
 
-                losses = self.model(clean_images)
+                if self.model_type == "classifier":
+                    logits = self.model(clean_images)
+                    loss = self.criterion(logits, labels)
+                    preds = torch.argmax(logits, dim=1)
+                    acc = (preds == labels).float().mean().item()
+                    losses = {"loss": loss, "accuracy": acc}
+                else:
+                    losses = self.model(clean_images)
 
                 for loss_type, value in losses.items():
                     if loss_type in losses_sum:
@@ -185,14 +231,22 @@ class Trainer:
                     else:
                         losses_sum[loss_type] = value.item()
 
-            avg_losses = {loss_type: (total_value / len(self.test_dataloader)) for loss_type, total_value in losses_sum.items()}
-            print(f"Average validation loss: {avg_losses["loss"]}")
+            avg_losses = {
+                loss_type: (total_value / len(self.test_dataloader))
+                for loss_type, total_value in losses_sum.items()
+            }
+            print(f"Average validation loss: {avg_losses['loss']}")
 
             for loss_type in avg_losses:
-                mlflow.log_metric(f"val_avg_{loss_type}", avg_losses[loss_type], step=epoch_num)
-
+                mlflow.log_metric(
+                    f"val_avg_{loss_type}", avg_losses[loss_type], step=epoch_num
+                )
 
     def sample_and_log_images(self, epoch_num):
+        if self.model_type == "classifier":
+            # Classifiers don't generate images stupid :D
+            return
+
         self.model.eval()
         with torch.no_grad():
             # Generate Train Samples
@@ -234,7 +288,7 @@ class Trainer:
 
             # Save and Log
             temp_path = f"temp_sample_epoch_{epoch_num}.png"
-            
+
             # Save the final pre-constructed grid
             save_image(final_image, temp_path)
 
@@ -243,7 +297,7 @@ class Trainer:
             os.remove(temp_path)
             print(f"Logged side-by-side sample images for epoch {epoch_num} to MLFlow")
 
-    def train(self): 
+    def train(self):
         print(f"Starting training from epoch {self.start_epoch}...")
         for epoch in range(self.start_epoch, self.epochs + 1):
             self._train_epoch(epoch)

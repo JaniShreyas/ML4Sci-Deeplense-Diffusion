@@ -1,5 +1,5 @@
 name: efficient_net_b2_classifier
-model_type: "classifier"
+type: "classifier"
 
 backbone:
   pretrained: True
