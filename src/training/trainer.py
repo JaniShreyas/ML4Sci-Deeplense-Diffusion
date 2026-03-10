@@ -132,7 +132,7 @@ class Trainer:
                 logits = self.model(clean_images)
                 loss = self.criterion(logits, labels)
                 preds = torch.argmax(logits, dim=1)
-                acc = (preds == labels).float().mean().item()
+                acc = (preds == labels).float().mean()
                 losses = {"loss": loss, "accuracy": acc}
             else:
                 # Model directly returns loss (helps in generalizing training loop in this ddpm case)
@@ -220,7 +220,7 @@ class Trainer:
                     logits = self.model(clean_images)
                     loss = self.criterion(logits, labels)
                     preds = torch.argmax(logits, dim=1)
-                    acc = (preds == labels).float().mean().item()
+                    acc = (preds == labels).float().mean()
                     losses = {"loss": loss, "accuracy": acc}
                 else:
                     losses = self.model(clean_images)
