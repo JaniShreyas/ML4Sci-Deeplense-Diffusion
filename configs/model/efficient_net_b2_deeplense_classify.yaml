@@ -6,3 +6,7 @@ backbone:
   num_classes: 3
   in_channels: 1
 
+defaults:
+  - metrics@metrics.acc: accuracy
+  - metrics@metrics.roc_auc: roc_auc
+  - metrics@metrics.roc: roc

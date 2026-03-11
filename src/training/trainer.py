@@ -24,6 +24,7 @@ class Trainer:
         config,
         start_epoch=1,
         ema_state_dict=None,
+        metrics=None,
     ):
         # Config and device setup
         self.config = config
@@ -46,6 +47,7 @@ class Trainer:
         self.optimizer = optimizer
         self.get_stats = get_stats
         self.start_epoch = start_epoch
+        self.metrics = metrics
 
         # Setup EMA decay
         self.ema_decay = self.config["training"].get("ema_decay")
@@ -131,13 +133,18 @@ class Trainer:
                 
                 logits = self.model(clean_images)
                 loss = self.criterion(logits, labels)
-                preds = torch.argmax(logits, dim=1)
-                acc = (preds == labels).float().mean()
-                losses = {"loss": loss, "accuracy": acc}
+
+                losses = {"loss": loss}
             else:
                 # Model directly returns loss (helps in generalizing training loop in this ddpm case)
                 losses = self.model(clean_images)
                 loss = losses["loss"]
+
+            # Calculate all defined metrics except roc_auc
+            for metric_name, metric_fn in self.metrics.items():
+                if metric_name == "roc_auc":
+                    continue
+                metric_fn.update(logits, labels)
 
             # Loss backward
             loss.backward()
@@ -160,6 +167,16 @@ class Trainer:
             loss_type: (total_value / len(self.train_dataloader))
             for loss_type, total_value in losses_sum.items()
         }
+
+        # Compute the metrics except roc_auc. This will be part of a special function called every n epochs
+        for metric_name, metric_fn in self.metrics.items():
+            if metric_name in ("roc_auc", "roc"):
+                continue
+            metric_value = metric_fn.compute()
+            mlflow.log_metric(metric_name, metric_value, step=epoch_num)
+            print(f"Epoch {epoch_num} - {metric_name}: {metric_value:.4f}")
+            metric_fn.reset()
+
         print(f"Epoch {epoch_num} - Average loss: {avg_losses['loss']:.4f}")
 
         # Log metrics for MLFlow
@@ -219,9 +236,14 @@ class Trainer:
                 if self.model_type == "classifier":
                     logits = self.model(clean_images)
                     loss = self.criterion(logits, labels)
-                    preds = torch.argmax(logits, dim=1)
-                    acc = (preds == labels).float().mean()
-                    losses = {"loss": loss, "accuracy": acc}
+                    # Validate checkpoints will run all metrics including roc_auc
+                    # But only for the roc curve, it should save an artifact
+                    # The auc value will be logged as a metric in mlflow, but the curve itself will be saved as an artifact (ROC curve is a plot after all)
+                    # The actual plot will be done after the batches are done
+                    for metric_name, metric_fn in self.metrics.items():
+                        metric_fn.update(logits, labels)
+
+                    losses = {"loss": loss,}
                 else:
                     losses = self.model(clean_images)
 
@@ -235,6 +257,51 @@ class Trainer:
                 loss_type: (total_value / len(self.test_dataloader))
                 for loss_type, total_value in losses_sum.items()
             }
+
+            # Compute all metrics and plot ROC curve if it exists
+            for metric_name, metric_fn in self.metrics.items():
+                if metric_name == "roc":
+                    fpr, tpr, thresholds = metric_fn.compute()
+
+                    plt.figure(figsize=(8, 6))
+                    
+                    if isinstance(fpr, list):
+                        # Multiclass: Plot a curve for each class
+                        for class_idx in range(len(fpr)):
+                            fpr_np = fpr[class_idx].cpu().numpy()
+                            tpr_np = tpr[class_idx].cpu().numpy()
+                            plt.plot(fpr_np, tpr_np, label=f"Class {class_idx}")
+                    else:
+                        # Binary: Plot a single curve
+                        fpr_np = fpr.cpu().numpy()
+                        tpr_np = tpr.cpu().numpy()
+                        plt.plot(fpr_np, tpr_np, label="ROC Curve") 
+
+                    plt.plot([0, 1], [0, 1], "k--", label="Random Guess")
+                    plt.xlabel("False Positive Rate")
+                    plt.ylabel("True Positive Rate")
+                    plt.title(f"ROC Curve - Epoch {epoch_num}")
+                    plt.legend(loc="lower right")
+
+                    temp_roc_path = f"roc_curve_epoch_{epoch_num}.png"
+                    plt.savefig(temp_roc_path)
+                    mlflow.log_artifact(temp_roc_path, artifact_path="validation_metrics")
+                    os.remove(temp_roc_path)
+            
+                    plt.close()
+                    
+                    print(f"Logged ROC curve for epoch {epoch_num} to MLFlow")
+
+                    metric_fn.reset()
+                    continue
+                
+                metric_value = metric_fn.compute().item() 
+                
+                mlflow.log_metric(f"val_{metric_name}", metric_value, step=epoch_num)
+                print(f"Validation - Epoch {epoch_num} - {metric_name}: {metric_value:.4f}")
+
+                metric_fn.reset()
+
             print(f"Average validation loss: {avg_losses['loss']}")
 
             for loss_type in avg_losses:

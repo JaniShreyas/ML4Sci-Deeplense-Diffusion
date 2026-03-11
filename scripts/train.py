@@ -15,6 +15,7 @@ from src.models import get_model
 from src.training.trainer import Trainer
 from src.data.config import DataConfig
 
+from src.metrics import get_metric
 
 def flatten_config(config):
     """Flattens a nested dictionary for MLflow logging."""
@@ -89,6 +90,14 @@ def main(config: DictConfig):
 
     ema_state_dict = None
 
+    # Setup metrics
+    # There can be multiple metrics, so we return a dict of metric name to metric object
+    # This needs to dynamic
+    metrics = {}
+    for metric_cfg in config.model.metrics.values():
+        metric = get_metric(metric_cfg, config)
+        metrics[metric_cfg.name] = metric
+
     # Load state from checkpoint if resuming
     if checkpoint:
         model.load_state_dict(checkpoint["model_state_dict"])
@@ -107,6 +116,7 @@ def main(config: DictConfig):
         config=config,
         start_epoch=start_epoch,
         ema_state_dict=ema_state_dict,
+        metrics=metrics,
     )
 
     trainer.train()
