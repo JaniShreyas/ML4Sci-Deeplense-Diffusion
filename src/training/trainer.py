@@ -130,7 +130,7 @@ class Trainer:
             if self.model_type == "classifier":
                 if labels is None:
                     raise ValueError("Labels are required for classifier training")
-                
+
                 logits = self.model(clean_images)
                 loss = self.criterion(logits, labels)
 
@@ -142,7 +142,7 @@ class Trainer:
 
             # Calculate all defined metrics except roc_auc
             for metric_name, metric_fn in self.metrics.items():
-                if metric_name == "roc_auc":
+                if metric_name in ("roc",):
                     continue
                 metric_fn.update(logits, labels)
 
@@ -170,7 +170,7 @@ class Trainer:
 
         # Compute the metrics except roc_auc. This will be part of a special function called every n epochs
         for metric_name, metric_fn in self.metrics.items():
-            if metric_name in ("roc_auc", "roc"):
+            if metric_name in ("roc",):
                 continue
             metric_value = metric_fn.compute()
             mlflow.log_metric(metric_name, metric_value, step=epoch_num)
@@ -243,7 +243,9 @@ class Trainer:
                     for metric_name, metric_fn in self.metrics.items():
                         metric_fn.update(logits, labels)
 
-                    losses = {"loss": loss,}
+                    losses = {
+                        "loss": loss,
+                    }
                 else:
                     losses = self.model(clean_images)
 
@@ -264,7 +266,7 @@ class Trainer:
                     fpr, tpr, thresholds = metric_fn.compute()
 
                     plt.figure(figsize=(8, 6))
-                    
+
                     if isinstance(fpr, list):
                         # Multiclass: Plot a curve for each class
                         for class_idx in range(len(fpr)):
@@ -275,7 +277,7 @@ class Trainer:
                         # Binary: Plot a single curve
                         fpr_np = fpr.cpu().numpy()
                         tpr_np = tpr.cpu().numpy()
-                        plt.plot(fpr_np, tpr_np, label="ROC Curve") 
+                        plt.plot(fpr_np, tpr_np, label="ROC Curve")
 
                     plt.plot([0, 1], [0, 1], "k--", label="Random Guess")
                     plt.xlabel("False Positive Rate")
@@ -285,20 +287,24 @@ class Trainer:
 
                     temp_roc_path = f"roc_curve_epoch_{epoch_num}.png"
                     plt.savefig(temp_roc_path)
-                    mlflow.log_artifact(temp_roc_path, artifact_path="validation_metrics")
+                    mlflow.log_artifact(
+                        temp_roc_path, artifact_path="validation_metrics"
+                    )
                     os.remove(temp_roc_path)
-            
+
                     plt.close()
-                    
+
                     print(f"Logged ROC curve for epoch {epoch_num} to MLFlow")
 
                     metric_fn.reset()
                     continue
-                
-                metric_value = metric_fn.compute().item() 
-                
+
+                metric_value = metric_fn.compute().item()
+
                 mlflow.log_metric(f"val_{metric_name}", metric_value, step=epoch_num)
-                print(f"Validation - Epoch {epoch_num} - {metric_name}: {metric_value:.4f}")
+                print(
+                    f"Validation - Epoch {epoch_num} - {metric_name}: {metric_value:.4f}"
+                )
 
                 metric_fn.reset()
 
