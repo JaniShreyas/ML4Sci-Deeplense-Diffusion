@@ -32,6 +32,7 @@ class Trainer:
         self.epochs = config["training"]["epochs"]
         self.experiment_name = config["experiment_name"]
         self.sample_every_n_epochs = config["sampling"]["sample_every_n_epochs"]
+        self.validate_every_n_epochs = config["training"]["validate_every_n_epochs"]
         self.model_type = config["model"]["type"]
         print(f"Trainer initialized for mode: {self.model_type.upper()}")
         if self.model_type == "classifier":
@@ -375,10 +376,12 @@ class Trainer:
         for epoch in range(self.start_epoch, self.epochs + 1):
             self._train_epoch(epoch)
 
+            if epoch % self.validate_every_n_epochs == 0:
+                self._validate_checkpoint(epoch)
+
             # Save a checkpoint every 10 epochs (can use validation loss as a metric later)
             if epoch % self.sample_every_n_epochs == 0:
                 self._save_and_log_checkpoint(epoch)
-                self._validate_checkpoint(epoch)
                 self.sample_and_log_images(epoch)
 
         # Always save the final model
