@@ -34,7 +34,7 @@ def create_pinn_efficient_net_b2(config) -> nn.Module:
     
     pinn_model = PhysicsInformedClassifier(
         backbone_classifier=efficientnet, 
-        physics_config=config.physics_module,
+        physics_config=config.model.physics_module,
         image_size=config.dataset.image_size 
     )
     
