@@ -1,3 +1,4 @@
 epochs: 10
 lr: 2.0e-4
 ema_decay: 0.9999  # Set to 0 if you don't want EMA model
+validate_every_n_epochs: 1

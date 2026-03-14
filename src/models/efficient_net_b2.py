@@ -7,7 +7,7 @@ import timm
 
 
 class EfficientNetB2(nn.Module):
-    def __init__(self, num_classes=3, pretrained=True, in_channels=1):
+    def __init__(self, num_classes=3, pretrained=True, in_channels=1, **kwargs):
         super(EfficientNetB2, self).__init__()
         self.model = timm.create_model(
             "efficientnet_b2",

@@ -6,13 +6,13 @@ hydra:
 
 defaults:
   - dataset: deeplense_classify
-  - model: 'efficient_net_b2_deeplense_classify'
+  - model: 'pinn_efficient_net_b2_deeplense_classify'
   - training: default
   - sampling: default
   - _self_
 
 # Global settings
 device: 'cuda'
-experiment_name: 'efficient_net_b2_deeplense_classify_initial_test'
+experiment_name: 'pinn_efficient_net_b2_deeplense_classify'
 seed: 42
 resume_from_run_id: null

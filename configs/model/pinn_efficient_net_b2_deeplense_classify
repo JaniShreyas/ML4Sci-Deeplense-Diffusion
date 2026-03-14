@@ -1,0 +1,19 @@
+name: pinn_efficient_net_b2
+type: classifier
+
+backbone:
+  pretrained: True
+  num_classes: 3
+  in_channels: 2  # 1 channel for raw image + 1 channel for unlensed image
+
+physics_module:
+  in_channels: 1
+  estimator_channels: [8, 16] # The channel sizes for the small internal CNN
+
+metrics:
+  acc:
+    name: accuracy
+  roc_auc:
+    name: roc_auc
+  roc:
+    name: roc
