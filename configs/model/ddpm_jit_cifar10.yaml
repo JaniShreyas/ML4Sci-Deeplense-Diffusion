@@ -1,8 +1,0 @@
-name: "ddpm_jit"
-
-loss_type: "v"
-prediction_type: "x"
-
-backbone:
-
-schedule:
