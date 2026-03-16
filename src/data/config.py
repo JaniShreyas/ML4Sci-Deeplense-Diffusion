@@ -12,6 +12,7 @@ class DataConfig:
     persistent_workers: bool = True
     download: bool = True
     shuffle_train: bool = True
+    seed: int = 42
     seed: Optional[int] = None
     image_size: Optional[tuple[int, int]] = None
     transform: Optional[T.Compose] = None

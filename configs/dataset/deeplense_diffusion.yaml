@@ -1,0 +1,6 @@
+name: deeplense_diffusion
+image_size: 150
+batch_size: 64
+data_root: datasets/deeplense_diffusion
+
+seed: ${seed}
