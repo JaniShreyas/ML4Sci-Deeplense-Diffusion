@@ -5,7 +5,7 @@ hydra:
   output_subdir: .hydra
 
 defaults:
-  - dataset: cifar10
+  - dataset: deeplense_diffusion
   - model: ddpm_jit_deeplense_diffusion
   - training: default
   - sampling: default
@@ -13,6 +13,6 @@ defaults:
 
 # Global settings
 device: 'cuda'
-experiment_name: 'ddpm_jit_cifar10_test'
+experiment_name: 'ddpm_jit_deeplense_diffusion'
 seed: 42
 resume_from_run_id: null
