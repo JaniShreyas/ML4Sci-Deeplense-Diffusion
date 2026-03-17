@@ -36,7 +36,7 @@ class DeepLenseDiffusionDataset(Dataset):
         return image, 0
 
 def get_stats():
-    return (0, ), (1, )  
+    return (0.5, ), (0.5, )  
 
 deeplense_diffusion_MEAN, deeplense_diffusion_STD = get_stats()
 
@@ -60,8 +60,9 @@ def default_transform(cfg: DataConfig | None = None):
         t_list.append(transforms.Resize(size))
         
     t_list.extend([
+        transforms.Normalize([0.5], [0.5]),
         transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomVerticalFlip(p=0.5)
+        transforms.RandomVerticalFlip(p=0.5),
     ])
 
     return transforms.Compose(t_list)

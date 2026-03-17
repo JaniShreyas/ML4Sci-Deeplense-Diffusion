@@ -6,9 +6,9 @@ prediction_type: "x"
 
 backbone:
   input_size: 150       # Must match your dataset image size
-  in_channels: 1       # Change to 3 if using RGB images
+  in_channels: 1
   patch_size: 15        
-  hidden_size: 160     
+  hidden_size: 64     
   depth: 8             
   num_heads: 4
   mlp_ratio: 4.0

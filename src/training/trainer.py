@@ -7,6 +7,7 @@ import os
 from torchvision.utils import save_image, make_grid
 from copy import deepcopy
 import matplotlib.pyplot as plt
+from torchmetrics.image.fid import FrechetInceptionDistance
 
 from src.data import denormalize
 from src.data.config import DataConfig
@@ -34,6 +35,12 @@ class Trainer:
         self.sample_every_n_epochs = config["sampling"]["sample_every_n_epochs"]
         self.validate_every_n_epochs = config["training"]["validate_every_n_epochs"]
         self.model_type = config["model"]["type"]
+        self.calculate_fid_every_n_epochs = self.config["training"].get("calculate_fid_every_n_epochs", 50)
+        self.fid_num_images = self.config["training"].get("fid_num_images", 1000)
+
+        if self.model_type == "diffusion":
+            self.fid_metric = FrechetInceptionDistance(normalize=True).to(self.device)
+
         print(f"Trainer initialized for mode: {self.model_type.upper()}")
         if self.model_type == "classifier":
             # The common task can be solved with Cross Entropy loss.
@@ -329,17 +336,17 @@ class Trainer:
                 image_size=self.config["dataset"]["image_size"],
                 get_stats=self.get_stats,
                 device=self.device,
-                sample_x=self.fixed_sample_batch_train,
+                # sample_x=self.fixed_sample_batch_train,
             )
 
             # Generate Test Samples
-            generated_test = self.ema_model.sample(
-                num_images=self.config["sampling"]["num_images"],
-                image_size=self.config["dataset"]["image_size"],
-                get_stats=self.get_stats,
-                device=self.device,
-                sample_x=self.fixed_sample_batch_test,
-            )
+            # generated_test = self.ema_model.sample(
+            #     num_images=self.config["sampling"]["num_images"],
+            #     image_size=self.config["dataset"]["image_size"],
+            #     get_stats=self.get_stats,
+            #     device=self.device,
+            #     sample_x=self.fixed_sample_batch_test,
+            # )
 
             # --- Formatting Logic ---
 
@@ -349,7 +356,7 @@ class Trainer:
             # Create the two separate 4x4 grids (C, H, W)
             # make_grid adds padding between small images automatically
             grid_train = make_grid(generated_train, nrow=nrow, padding=2)
-            grid_test = make_grid(generated_test, nrow=nrow, padding=2)
+            # grid_test = make_grid(generated_test, nrow=nrow, padding=2)
 
             # Create a vertical separator (White line)
             channels, height, _ = grid_train.shape
@@ -358,7 +365,7 @@ class Trainer:
 
             # Combine: Train | Separator | Test
             # We concatenate along dimension 2 (the width dimension)
-            final_image = torch.cat([grid_train, separator, grid_test], dim=2)
+            final_image = torch.cat([grid_train], dim=2)
 
             # Save and Log
             temp_path = f"temp_sample_epoch_{epoch_num}.png"
@@ -370,6 +377,63 @@ class Trainer:
 
             os.remove(temp_path)
             print(f"Logged side-by-side sample images for epoch {epoch_num} to MLFlow")
+
+    def calculate_fid(self, epoch_num):
+        if self.model_type == "classifier":
+            return
+
+        print(f"\nCalculating FID Score for Epoch {epoch_num}")
+        print(f"Generating {self.fid_num_images} images. This will take a moment...")
+        
+        self.ema_model.eval()
+        self.fid_metric.reset()
+
+        batch_size = self.config["dataset"]["batch_size"]
+        num_batches = math.ceil(self.fid_num_images / batch_size)
+
+        with torch.no_grad():
+            # Feed real Images from the Validation Loader
+            real_count = 0
+            for images, _ in self.test_dataloader:
+                if real_count >= self.fid_num_images:
+                    break
+                
+                images = images.to(self.device)
+                
+                # InceptionV3 requires 3 channels. We repeat the 1 grayscale channel 3 times.
+                if images.shape[1] == 1:
+                    images = images.repeat(1, 3, 1, 1)
+
+                self.fid_metric.update(images, real=True)
+                real_count += images.shape[0]
+
+            # Feed fake generated Images
+            fake_count = 0
+            for _ in tqdm(range(num_batches), desc="Generating FID Samples", leave=False):
+                # Ensure we don't generate more than exactly `fid_num_images`
+                current_batch_size = min(batch_size, self.fid_num_images - fake_count)
+
+                fake_images = self.ema_model.sample(
+                    num_images=current_batch_size,
+                    image_size=self.config["dataset"]["image_size"],
+                    get_stats=self.get_stats,
+                    device=self.device
+                )
+
+                # Ensure fake images are 3 channels as well
+                if fake_images.shape[1] == 1:
+                    fake_images = fake_images.repeat(1, 3, 1, 1)
+
+                self.fid_metric.update(fake_images, real=False)
+                fake_count += current_batch_size
+
+        # Compute and Log
+        fid_score = self.fid_metric.compute().item()
+        
+        step_val = epoch_num if isinstance(epoch_num, int) else self.epochs
+        mlflow.log_metric("val_fid", fid_score, step=step_val)
+        
+        print(f"FID Score: {fid_score:.4f} (Logged to MLflow)\n")
 
     def train(self):
         print(f"Starting training from epoch {self.start_epoch}...")
@@ -383,9 +447,14 @@ class Trainer:
             if epoch % self.sample_every_n_epochs == 0:
                 self._save_and_log_checkpoint(epoch)
                 self.sample_and_log_images(epoch)
+            
+            if epoch % self.calculate_fid_every_n_epochs == 0:
+                self.calculate_fid(epoch)
 
         # Always save the final model
         self._save_and_log_checkpoint(self.epochs, is_final=True)
         self._validate_checkpoint(self.epochs, if_final=True)
         self.sample_and_log_images("final")
+        self.calculate_fid("final")
+
         print("Training complete.")
