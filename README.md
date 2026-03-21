@@ -19,24 +19,35 @@ To facilitate a smooth review process, all officially requested deliverables are
 *Note: Evaluation strategies were tailored to the data provided for each specific task. Tasks 1 and 7 were evaluated on their officially pre-separated validation sets for standard benchmarking. Task 8 (Diffusion) utilized a strict 90:10 manual Train-Test split to ensure rigorous out-of-distribution evaluation for the generative metrics.*
 
 ### Task 1: Baseline DeepLense Classification
-* **Validation Accuracy:** `[Insert Final Accuracy]%`
-* **ROC-AUC Score:** `[Insert AUC Score]`
-*(See `Task_1_Exploration.ipynb` for ROC curves)*
+* **Validation ROC-AUC Score:** `0.904`
+* **Validation Accuracy:** `74.5%`
+
+| Model Performance (ROC Curve) |
+| :---: |
+| <img src="docs/assets/task1_roc_curve.png" width="400"/> |
+
 
 ### Task 7: Physics-Guided Machine Learning (PINN)
-* **Validation Accuracy:** `[Insert Final Accuracy]%`
-* **ROC-AUC Score:** `[Insert AUC Score]`
-*(Demonstrates the integration of physical constraints directly into the neural network's loss landscape.)*
+* **Validation ROC-AUC Score:** `0.958`
+* **Validation Accuracy:** `86.04%`
+
+| Model Performance (ROC Curve) |
+| :---: |
+| <img src="docs/assets/task7_roc_curve.png" width="400"/> |
+
+
 
 ### Task 8: Denoising Diffusion Probabilistic Models (DDPM)
 *Note: This task represents a standard, purely data-driven diffusion baseline. The integration of physics-guided constraints into this generative architecture is the primary focus of the proposed GSoC summer timeline.*
-* **Validation Denoising Loss (MSE):** `[Insert Final Val Loss]`
-* **Fréchet Inception Distance (FID):** `[Insert Final FID Score]` *(Calculated dynamically mapping standard limits to a [-1, 1] range)*
+* **Fréchet Inception Distance (FID):** `74.27(final - epoch 700), 52.67(minimum - epoch 400)` *(Calculated dynamically mapping standard limits to a [-1, 1] range)*
+* **Validation Denoising Loss (MSE):** `0.0217`
+
+The benefit of using the JiT with the config available in the Task 8 notebook made each epoch take less than 40seconds and all 700 epochs were done under 5 hours. People experienced with DDPMs will know that is infeasible with the standard pixel space models using epsilon loss on a dataset like this (150x150x1 images)
 
 #### Visualizing the Generative Baseline (Task 8)
 | Real Lenses (Test Set) | Generated Lenses (JiT-DDPM) |
 | :---: | :---: |
-| <img src="docs/assets/real_grid.png" width="300"/> | <img src="docs/assets/generated_grid.png" width="300"/> |
+| <img src="docs/assets/real_grid.png" width="205"/> | <img src="docs/assets/generated_grid.png" width="500"/> |
 *(Left: Ground truth data. Right: Unconditional samples generated from pure noise using the trained EMA model.)*
 
 
