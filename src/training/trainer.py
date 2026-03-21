@@ -359,9 +359,9 @@ class Trainer:
             # grid_test = make_grid(generated_test, nrow=nrow, padding=2)
 
             # Create a vertical separator (White line)
-            channels, height, _ = grid_train.shape
-            separator_width = 10
-            separator = torch.ones(channels, height, separator_width).to(self.device)
+            # channels, height, _ = grid_train.shape
+            # separator_width = 10
+            # separator = torch.ones(channels, height, separator_width).to(self.device)
 
             # Combine: Train | Separator | Test
             # We concatenate along dimension 2 (the width dimension)
@@ -399,6 +399,7 @@ class Trainer:
                     break
                 
                 images = images.to(self.device)
+                images = (images * 0.5 + 0.5).clamp(0, 1)
                 
                 # InceptionV3 requires 3 channels. We repeat the 1 grayscale channel 3 times.
                 if images.shape[1] == 1:
@@ -419,6 +420,7 @@ class Trainer:
                     get_stats=self.get_stats,
                     device=self.device
                 )
+                fake_images = (fake_images * 0.5 + 0.5).clamp(0, 1)
 
                 # Ensure fake images are 3 channels as well
                 if fake_images.shape[1] == 1:
