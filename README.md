@@ -1,7 +1,7 @@
 # 🌌 DeepLense Diffusion: Gravitational Lensing Synthesis
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg) ![PyTorch](https://img.shields.io/badge/PyTorch-2.6+-ee4c2c.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-> **Google Summer of Code 2026 Submission** > A modular, Vision Transformer-based Denoising Diffusion Probabilistic Model (JiT-DDPM) for generating high-fidelity gravitational lensing simulations.
+> **Google Summer of Code 2026 Submission** > A modular, Vision Transformer (JiT)-based Denoising Diffusion Probabilistic Model (JiT-DDPM) for generating high-fidelity gravitational lensing simulations.
 
 ---
 
@@ -42,7 +42,8 @@ To facilitate a smooth review process, all officially requested deliverables are
 * **Fréchet Inception Distance (FID):** `74.27(final - epoch 700), 52.67(minimum - epoch 400)` *(Calculated dynamically mapping standard limits to a [-1, 1] range)*
 * **Validation Denoising Loss (MSE):** `0.0217`
 
-The benefit of using the JiT with the config available in the Task 8 notebook made each epoch take less than 40seconds and all 700 epochs were done under 5 hours. People experienced with DDPMs will know that is infeasible with the standard pixel space models using epsilon loss on a dataset like this (150x150x1 images)
+Efficiency Breakthrough: By utilizing the JiT architecture with x-prediction and v-loss, training is exceptionally fast. A full 700-epoch run converges in under 6 hours (at < 30-40 seconds per epoch). Traditional pixel-space DDPMs using ϵ-prediction on 150x150x1 datasets typically face severe convergence bottlenecks and memory overheads, making this pipeline highly optimal for rapid GSoC prototyping.
+And setting up VAEs for Latent space causes a separate model to manage, usually requiring multiple losses. In comparison, a JiT can perform equivalently with much cleaner and elegant architecture and no extra auxiliary losses.
 
 #### Visualizing the Generative Baseline (Task 8)
 | Real Lenses (Test Set) | Generated Lenses (JiT-DDPM) |
@@ -57,7 +58,7 @@ The benefit of using the JiT with the config available in the Task 8 notebook ma
 This repository is built with production-grade MLOps principles in mind, moving beyond static scripts into a fully modular pipeline:
 * **Configuration as Code:** Driven by `Hydra`, completely decoupling hyperparameters (`patch_size`, `hidden_size`, `epochs`, etc.) from the Python logic.
 * **Dynamic Factories:** Models, datasets, and noise schedules are instantiated dynamically via the corresponding \_\_init__.py of data/ models/ etc., ensuring zero hardcoded dependencies.
-* **JiT-DDPM Backbone:** Utilizes the Just Image Transformer from the recent paper: arxiv.org/pdf/2511.13720. It utilizes x-prediction combined with v-loss. x-pred instead of the standard epsilon loss makes training significantly faster (effectively the main point of the paper). More details in [Task 8 Readme](./Task_8_Diffusion_Models/)
+* **JiT-DDPM Backbone:** Utilizes the Just Image Transformer from the recent paper: [arXiv:2511.13720](https://arxiv.org/abs/2511.13720). It utilizes x-prediction combined with v-loss. x-pred instead of the standard epsilon loss makes training significantly faster (effectively the main point of the paper). More details in [Task 8 notebook](./Task_8_Diffusion_Models/)
 * **Decoupled Training:** A standalone `Trainer` class handles Exponential Moving Average (EMA) weights, `MLflow` experiment tracking, and automated checkpointing.
 
 ---
@@ -116,7 +117,6 @@ uv run -m scripts.train experiment_name=gsoc_eval training.epochs=50 model.backb
 ### 5. Monitor training
 Open another terminal and run
 ```bash
-.venv/scripts/activate
-mlflow ui
+uv run mlflow ui
 ```
 Then go to ```localhost:5000/``` for MLflow's gui

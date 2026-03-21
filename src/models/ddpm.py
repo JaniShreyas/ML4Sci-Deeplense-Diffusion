@@ -130,7 +130,10 @@ class DiffusionModel(nn.Module):
                 x = mean
 
         # Denormalize images for viewing and saving
-        mean, std = get_stats(DataConfig(**self.config.dataset))
+        if callable(get_stats):
+            mean, std = get_stats(DataConfig(**self.config.dataset))
+        else:
+            mean, std = get_stats
         mean = torch.tensor(mean, device=x.device, dtype=x.dtype).view(1,-1,1,1)
         std = torch.tensor(std, device=x.device, dtype=x.dtype).view(1,-1,1,1)
         x = x * std + mean
