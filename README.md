@@ -48,7 +48,7 @@ And setting up VAEs for Latent space causes a separate model to manage, usually 
 #### Visualizing the Generative Baseline (Task 8)
 | Real Lenses (Test Set) | Generated Lenses (JiT-DDPM) |
 | :---: | :---: |
-| <img src="docs/assets/real_grid.png" width="205"/> | <img src="docs/assets/generated_grid.png" width="500"/> |
+| <img src="docs/assets/real_grid.png" width="500"/> | <img src="docs/assets/generated_grid.png" width="500"/> |
 *(Left: Ground truth data. Right: Unconditional samples generated from pure noise using the trained EMA model.)*
 
 
