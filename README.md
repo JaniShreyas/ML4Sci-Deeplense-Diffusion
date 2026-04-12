@@ -1,7 +1,7 @@
 # 🌌 DeepLense Diffusion: Gravitational Lensing Synthesis
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg) ![PyTorch](https://img.shields.io/badge/PyTorch-2.6+-ee4c2c.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-> **Google Summer of Code 2026 Submission** > A modular, Vision Transformer (JiT)-based Denoising Diffusion Probabilistic Model (JiT-DDPM) for generating high-fidelity gravitational lensing simulations.
+> **Google Summer of Code 2026 Submission** > A modular, Vision Transformer (JiT)-based Denoising Diffusion Probabilistic Model (JiT-DDPM) with DDIM sampling for generating high-fidelity gravitational lensing simulations.
 
 ---
 
@@ -44,6 +44,7 @@ To facilitate a smooth review process, all officially requested deliverables are
 
 Efficiency Breakthrough: By utilizing the JiT architecture with x-prediction and v-loss, training is exceptionally fast. A full 700-epoch run converges in under 6 hours (at < 30-40 seconds per epoch). Traditional pixel-space DDPMs using ϵ-prediction on 150x150x1 datasets typically face severe convergence bottlenecks and memory overheads, making this pipeline highly optimal for rapid GSoC prototyping.
 And setting up VAEs for Latent space causes a separate model to manage, usually requiring multiple losses. In comparison, a JiT can perform equivalently with much cleaner and elegant architecture and no extra auxiliary losses.
+Also utilizes DDIM sampling (default 50 steps) for much faster sampling (and also faster FID calculation during training)
 
 #### Visualizing the Generative Baseline (Task 8)
 | Real Lenses (Test Set) | Generated Lenses (JiT-DDPM) |
