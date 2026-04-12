@@ -1,7 +1,7 @@
 # 🌌 DeepLense Diffusion: Gravitational Lensing Synthesis
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg) ![PyTorch](https://img.shields.io/badge/PyTorch-2.6+-ee4c2c.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-> **Google Summer of Code 2026 Submission** > A modular, Vision Transformer (JiT)-based Denoising Diffusion Probabilistic Model (JiT-DDPM) for generating high-fidelity gravitational lensing simulations.
+> **Google Summer of Code 2026 Submission** > A modular, Vision Transformer (JiT)-based Denoising Diffusion Probabilistic Model (JiT-DDPM) with DDIM sampling for generating high-fidelity gravitational lensing simulations.
 
 ---
 
