@@ -5,4 +5,4 @@ validate_every_n_epochs: 1
 
 # Will only be used when training diffusion models
 calculate_fid_every_n_epochs: 100
-fid_num_images: 1000
+fid_num_images: 10000
