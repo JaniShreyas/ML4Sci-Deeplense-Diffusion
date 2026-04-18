@@ -63,6 +63,7 @@ This repository is built with production-grade MLOps principles in mind, moving 
 * **Configuration as Code:** Driven by `Hydra`, completely decoupling hyperparameters (`patch_size`, `hidden_size`, `epochs`, etc.) from the Python logic.
 * **Dynamic Factories:** Models, datasets, and noise schedules are instantiated dynamically via the corresponding \_\_init__.py of data/ models/ etc., ensuring zero hardcoded dependencies.
 * **JiT-DDPM Backbone:** Utilizes the Just Image Transformer from the recent paper: [arXiv:2511.13720](https://arxiv.org/abs/2511.13720). It utilizes x-prediction combined with v-loss. x-pred instead of the standard epsilon loss makes training significantly faster (effectively the main point of the paper). More details in [Task 8 notebook](./Task_8_Diffusion_Models/)
+* **DDIM Sampler:** Utilizes the faster DDIM sampler for discrete time-step training. Initially didn't have it, but it is effectively a necessity for calculating larger sample FIDs. (Also plan to move onto continuous-time SDE formulations for training the JiT instead. Have been going through a lot more literature and noticed multiple things I had missed between DDPM and JiT. The EDM preconditioning won't work for only x-prediction but other approaches are doable, and may improve performance over the older Ho et. al. process)
 * **Decoupled Training:** A standalone `Trainer` class handles Exponential Moving Average (EMA) weights, `MLflow` experiment tracking, and automated checkpointing.
 
 ---
