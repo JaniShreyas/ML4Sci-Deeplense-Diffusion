@@ -39,8 +39,11 @@ To facilitate a smooth review process, all officially requested deliverables are
 
 ### Task 8: Denoising Diffusion Probabilistic Models (DDPM)
 *Note: This task represents a standard, purely data-driven diffusion baseline. The integration of physics-guided constraints into this generative architecture is the primary focus of the proposed GSoC summer timeline.*
-* **Fréchet Inception Distance (FID):** `74.27(final - epoch 700), 52.67(minimum - epoch 400)` *(Calculated dynamically mapping standard limits to a [-1, 1] range)*
+* **Fréchet Inception Distance (FID@1k-test-images):** `74.27(final - epoch 700), 52.67(minimum - epoch 400)` *(Calculated dynamically mapping standard limits to a [-1, 1] range)*
 * **Validation Denoising Loss (MSE):** `0.0217`
+
+(Later FID calculation on the 9k train images also gave just barely better ~72 FID. Significantly different from my experience with CIFAR10 which, for similar scale, went from 73 to 32 FID (More information about this ongoing project on: https://github.com/JaniShreyas/ddpm-inpainting)
+(I assume this means that the synthetic data images that we are using are so similar that the inherent distribution calculated by the Inception net (for FID) are effectively the same whether it be 1k or 9k images)
 
 Efficiency Breakthrough: By utilizing the JiT architecture with x-prediction and v-loss, training is exceptionally fast. A full 700-epoch run converges in under 6 hours (at < 30-40 seconds per epoch). Traditional pixel-space DDPMs using ϵ-prediction on 150x150x1 datasets typically face severe convergence bottlenecks and memory overheads, making this pipeline highly optimal for rapid GSoC prototyping.
 And setting up VAEs for Latent space causes a separate model to manage, usually requiring multiple losses. In comparison, a JiT can perform equivalently with much cleaner and elegant architecture and no extra auxiliary losses.
