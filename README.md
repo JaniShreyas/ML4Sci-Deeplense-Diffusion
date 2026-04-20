@@ -45,7 +45,7 @@ To facilitate a smooth review process, all officially requested deliverables are
 (Later FID calculation on the 9k train images also gave just barely better ~72 FID. Significantly different from my experience with CIFAR10 which, for similar scale, went from 73 to 32 FID (More information about this ongoing project on: https://github.com/JaniShreyas/ddpm-inpainting)
 (I assume this means that the synthetic data images that we are using are so similar that the inherent distribution calculated by the Inception net (for FID) are effectively the same whether it be 1k or 9k images)
 
-Efficiency Breakthrough: By utilizing the JiT architecture with x-prediction and v-loss, training is exceptionally fast. A full 700-epoch run converges in under 6 hours (at < 30-40 seconds per epoch). Traditional pixel-space DDPMs using ϵ-prediction on 150x150x1 datasets typically face severe convergence bottlenecks and memory overheads, making this pipeline highly optimal for rapid GSoC prototyping.
+Efficiency Breakthrough: By utilizing the JiT architecture with x-prediction and v-loss, training is exceptionally fast. A full 700-epoch run converges in under 6 hours (at < 30-40 seconds per epoch) on a GTX 1660. Traditional pixel-space DDPMs using ϵ-prediction on 150x150x1 datasets typically face severe convergence bottlenecks and memory overheads, making this pipeline highly optimal for rapid GSoC prototyping.
 And setting up VAEs for Latent space causes a separate model to manage, usually requiring multiple losses. In comparison, a JiT can perform equivalently with much cleaner and elegant architecture and no extra auxiliary losses.
 Also utilizes DDIM sampling (default 50 steps) for much faster sampling (and also faster FID calculation during training)
 
