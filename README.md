@@ -13,6 +13,8 @@ To facilitate a smooth review process, all officially requested deliverables are
 <!-- * **Trained Model Weights:** Available in the [GitHub Releases tab](../../releases/latest) (Includes `latest_checkpoint.pt` and `ema_model.pt`). -->
 * **Evaluation Metrics:** Evaluated strictly on a **90:10 Train-Test split**. Results are documented below and fully reproducible via the notebooks.
 
+(All experiments were run a consumer GTX 1660 GPU)
+
 ---
 
 ## 📊 Results & Evaluation
